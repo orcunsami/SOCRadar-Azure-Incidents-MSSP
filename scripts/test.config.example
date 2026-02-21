@@ -1,0 +1,19 @@
+# Azure Resource Configuration for MSSP Testing
+# Copy to test.config and fill in your values
+SUBSCRIPTION_ID="your-subscription-id"
+RESOURCE_GROUP="your-resource-group"
+WORKSPACE_NAME="your-sentinel-workspace"
+LOCATION="northeurope"
+
+# Time Settings
+POLLING_INTERVAL_MINUTES="5"
+INITIAL_LOOKBACK_MINUTES="600"
+
+# Import Settings
+# true = Import all statuses (OPEN, RESOLVED, MITIGATED, FALSE_POSITIVE)
+# false = Import only OPEN alarms (default)
+IMPORT_ALL_STATUSES="false"
+
+# CompanyConfigs JSON (multiple test companies)
+# Must be valid JSON - wrap in single quotes
+COMPANY_CONFIGS='{"companies":[{"CompanyId":"330","CompanyName":"TestCo1","ApiKey":"your-api-key-1"},{"CompanyId":"331","CompanyName":"TestCo2","ApiKey":"your-api-key-2"}]}'
