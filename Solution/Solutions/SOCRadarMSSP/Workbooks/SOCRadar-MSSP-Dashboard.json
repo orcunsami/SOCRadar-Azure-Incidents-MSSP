@@ -1,0 +1,207 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# SOCRadar MSSP Dashboard\n\nMulti-tenant alarm monitoring across all managed companies."
+      },
+      "name": "header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+            "version": "KqlParameterItem/1.0",
+            "name": "CompanyName",
+            "type": 2,
+            "isRequired": false,
+            "query": "SOCRadar_Alarms_CL | distinct CompanyName | order by CompanyName asc",
+            "typeSettings": {
+              "additionalResourceOptions": ["value::all"],
+              "showDefault": false
+            },
+            "defaultValue": "value::all",
+            "queryType": 0,
+            "resourceType": "microsoft.operationalinsights/workspaces"
+          }
+        ]
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| summarize Count=count() by CompanyName, Severity\n| render barchart",
+        "size": 1,
+        "title": "Alarms by Severity per Company",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "severity-per-company"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| summarize Count=count() by Severity\n| render piechart",
+        "size": 1,
+        "title": "Alarms by Severity",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "severity-chart",
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| summarize Count=count() by Status\n| render piechart",
+        "size": 1,
+        "title": "Alarms by Status",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "status-chart",
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| summarize Count=count() by bin(TimeGenerated, 1h), CompanyName\n| render timechart",
+        "size": 1,
+        "title": "Alarms Over Time by Company (Hourly)",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "timeline"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### Cross-Tenant Analysis"
+      },
+      "name": "cross-tenant-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| summarize Companies=dcount(CompanyName), CompanyList=make_set(CompanyName) by AlarmMainType\n| where Companies > 1\n| order by Companies desc\n| take 20",
+        "size": 1,
+        "title": "Threats Affecting Multiple Tenants",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "cross-tenant-correlation"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| summarize LastAlarm=max(TimeGenerated), TotalAlarms=count(), HighSeverity=countif(Severity in ('HIGH', 'CRITICAL')) by CompanyName\n| extend HoursSinceLastAlarm=datetime_diff('hour', now(), LastAlarm)\n| order by HoursSinceLastAlarm desc",
+        "size": 1,
+        "title": "Tenant Health - Last Alarm per Company",
+        "timeContext": {
+          "durationMs": 2592000000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "tenant-health"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| summarize Count=count() by AlarmMainType\n| top 10 by Count\n| render barchart",
+        "size": 1,
+        "title": "Top 10 Alarm Types",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "types-chart"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadar_Alarms_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| project TimeGenerated, CompanyName, AlarmId, Severity, AlarmMainType, AlarmSubType, Title, Status\n| order by TimeGenerated desc\n| take 50",
+        "size": 1,
+        "title": "Recent Alarms (Last 50)",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "recent-alarms"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "---\n### Audit Logs\nIf audit logging is enabled, you can monitor operations below."
+      },
+      "name": "audit-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadarAuditLog_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| summarize Count=count() by EventType, CompanyName\n| render barchart",
+        "size": 1,
+        "title": "Audit Events by Type and Company",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "audit-chart",
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SOCRadarAuditLog_CL\n| where '{CompanyName:label}' == 'All' or CompanyName == '{CompanyName}'\n| project TimeGenerated, CompanyName, EventType, AlarmId, Message\n| order by TimeGenerated desc\n| take 20",
+        "size": 1,
+        "title": "Recent Audit Events",
+        "timeContext": {
+          "durationMs": 604800000
+        },
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "audit-table",
+      "customWidth": "50"
+    }
+  ],
+  "fromTemplateId": "sentinel-SOCRadarMSSPWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "isLocked": false
+}

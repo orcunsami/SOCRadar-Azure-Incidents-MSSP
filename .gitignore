@@ -1,0 +1,10 @@
+.env
+test.config
+*.local
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+potential-app-plan.txt

@@ -1,0 +1,15 @@
+id: 7b2c8d1e-f3a4-45b6-9c7d-8e0f1a2b3c4d
+name: SOCRadar MSSP Alarm Overview
+description: |
+  'Overview of SOCRadar MSSP alarms grouped by company, type, and severity across all managed tenants.'
+description-detailed: |
+  'This query provides a summary view of all SOCRadar alarms imported across managed tenants.
+  It groups alarms by company name, main type, and severity level to help MSSP analysts identify the most common and critical threat categories per tenant.'
+requiredDataConnectors: []
+tactics:
+  - Discovery
+query: |
+  SOCRadar_Alarms_CL
+  | summarize Count=count() by CompanyName, AlarmMainType, Severity
+  | order by CompanyName asc, Count desc
+version: 1.0.0

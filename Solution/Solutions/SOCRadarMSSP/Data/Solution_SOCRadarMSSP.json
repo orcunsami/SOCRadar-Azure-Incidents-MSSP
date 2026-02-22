@@ -1,0 +1,35 @@
+{
+  "Name": "SOCRadarMSSP",
+  "Author": "SOCRadar - integration@socradar.io",
+  "Logo": "<img src=\"https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Logos/socradar.svg\" width=\"75px\" height=\"75px\">",
+  "Description": "The [SOCRadar MSSP](https://socradar.io/) solution for Microsoft Sentinel provides multi-tenant incident management for Managed Security Service Providers. Centralize security operations across multiple customer tenants while maintaining data isolation.",
+  "WorkbookBladeDescription": "This solution installs a workbook to visualize SOCRadar alarm data across all managed customer tenants.",
+  "HuntingQueryBladeDescription": "This solution installs hunting queries to help investigate SOCRadar alarm data across multiple tenants.",
+  "PlaybooksBladeDescription": "This solution installs MSSP-specific playbooks to automate alarm import and sync for multi-tenant environments.",
+  "Version": "1.0.0",
+  "BasePath": "/Users/mac/Documents/work2/integrations/azure/incidents-mssp/Solution",
+  "TemplateSpec": true,
+  "Is1Pconnector": false,
+  "Metadata": "SolutionMetadata.json",
+  "Workbooks": [
+    "Solutions/SOCRadarMSSP/Workbooks/SOCRadar-MSSP-Dashboard.json"
+  ],
+  "WorkbookDescription": [
+    "SOCRadar MSSP Dashboard provides unified visibility into alarms from all managed customer tenants, with filtering and drill-down capabilities per tenant."
+  ],
+  "Hunting Queries": [
+    "Solutions/SOCRadarMSSP/Hunting Queries/SOCRadar-MSSP-Alarm-Overview.yaml",
+    "Solutions/SOCRadarMSSP/Hunting Queries/SOCRadar-MSSP-Cross-Tenant-Correlation.yaml",
+    "Solutions/SOCRadarMSSP/Hunting Queries/SOCRadar-MSSP-Tenant-Health.yaml"
+  ],
+  "Playbooks": [
+    "Solutions/SOCRadarMSSP/Playbooks/SOCRadar-MSSP-Import/azuredeploy.json",
+    "Solutions/SOCRadarMSSP/Playbooks/SOCRadar-MSSP-Sync/azuredeploy.json",
+    "Solutions/SOCRadarMSSP/Playbooks/SOCRadar-MSSP-Infrastructure/azuredeploy.json"
+  ],
+  "PlaybookDescription": [
+    "Multi-tenant alarm import with dynamic company registry and parallel processing.",
+    "Syncs closed incidents back to appropriate SOCRadar tenants with classification mapping.",
+    "Creates infrastructure for multi-tenant audit logging and telemetry."
+  ]
+}

@@ -1,0 +1,12 @@
+{
+    "playbookName": "SOCRadar-MSSP-Import",
+    "version": "1.0.0",
+    "type": "MSSP-MultiTenant",
+    "description": "Multi-tenant alarm import with dynamic company registry",
+    "requiredConnections": ["azuresentinel", "keyvault", "azuretables"],
+    "configuration": {
+        "companyRegistryTable": "MSSPCompanies",
+        "parallelConcurrency": 10,
+        "pollingInterval": "5 minutes"
+    }
+}
