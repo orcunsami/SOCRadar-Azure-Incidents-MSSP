@@ -18,6 +18,16 @@ if [ -z "$SUBSCRIPTION_ID" ] || [ -z "$RESOURCE_GROUP" ] || [ -z "$WORKSPACE_NAM
     exit 1
 fi
 
+# CRITICAL: Disable Logic Apps on ANY exit (crash, error, Ctrl+C)
+# 5587 TL lesson: NEVER leave Logic Apps enabled!
+cleanup() {
+    echo ""
+    echo "  Disabling Logic Apps (cleanup)..."
+    az logic workflow update --name "SOCRadar-MSSP-Import" -g "$RESOURCE_GROUP" --state Disabled -o none 2>/dev/null || true
+    az logic workflow update --name "SOCRadar-MSSP-Sync" -g "$RESOURCE_GROUP" --state Disabled -o none 2>/dev/null || true
+}
+trap cleanup EXIT
+
 POLLING="${POLLING_INTERVAL_MINUTES:-5}"
 BASE_URL="https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP"
 SENTINEL_URL="$BASE_URL/providers/Microsoft.OperationalInsights/workspaces/$WORKSPACE_NAME/providers/Microsoft.SecurityInsights"
