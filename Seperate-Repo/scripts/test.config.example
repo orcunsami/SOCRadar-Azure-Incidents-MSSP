@@ -1,0 +1,19 @@
+# Azure Resource Configuration for MSSP Testing
+# Copy to test.config and fill in your values
+SUBSCRIPTION_ID="your-subscription-id"
+RESOURCE_GROUP="your-resource-group"
+WORKSPACE_NAME="your-sentinel-workspace"
+LOCATION="northeurope"
+
+# Logic App Names (defaults match template defaults)
+IMPORT_PLAYBOOK_NAME="SOCRadar-MSSP-Import"
+SYNC_PLAYBOOK_NAME="SOCRadar-MSSP-Sync"
+
+# Polling Settings
+POLLING_INTERVAL_MINUTES="5"
+INITIAL_LOOKBACK_MINUTES="600"
+IMPORT_ALL_STATUSES="false"
+
+# Audit Logging (requires Infrastructure template)
+ENABLE_AUDIT_LOGGING="false"
+ENABLE_ALARMS_TABLE="false"
