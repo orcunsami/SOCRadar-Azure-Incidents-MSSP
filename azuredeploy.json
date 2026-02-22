@@ -767,7 +767,7 @@
                     "InitialLookbackMinutes": { "value": "[parameters('InitialLookbackMinutes')]" },
                     "ImportAllStatuses": { "value": "[parameters('ImportAllStatuses')]" },
                     "EnableAuditLogging": { "value": "[parameters('EnableAuditLogging')]" },
-                    "AuditDcrEndpoint": { "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').endpoints.logIngestion, '')]" },
+                    "AuditDcrEndpoint": { "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').endpoints.logsIngestion, '')]" },
                     "AuditDcrImmutableId": { "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').immutableId, '')]" },
                     "AuditStreamName": { "value": "[variables('AuditStreamName')]" },
                     "EnableAlarmsTable": { "value": "[parameters('EnableAlarmsTable')]" },
