@@ -1,12 +1,12 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0",
+    "contentVersion": "1.0.0.0",
     "metadata": {
         "title": "SOCRadar-MSSP-Import",
         "description": "Multi-tenant alarm import for MSSP environments. Imports alarms from multiple SOCRadar company accounts with parallel processing and per-tenant error isolation.",
         "version": "1.0.0",
         "author": "SOCRadar",
-        "lastUpdateTime": "2026-02-21T00:00:00.000Z"
+        "lastUpdateTime": "2026-02-23T00:00:00.000Z"
     },
     "parameters": {
         "PlaybookName": {
@@ -86,7 +86,6 @@
         "SentinelConnectionName": "[concat('azuresentinel-', parameters('PlaybookName'))]",
         "SentinelContributorRoleId": "ab8e14d6-4a74-4a29-9ba8-549422addade",
         "LogAnalyticsReaderRoleId": "73c42c96-874c-492b-b04d-ab87d138a893",
-        "MonitoringMetricsPublisherRoleId": "3913510d-42f4-4e42-8a64-420c390055eb",
         "AuditStreamName": "Custom-SOCRadarAuditLog_CL"
     },
     "resources": [
@@ -114,7 +113,7 @@
                 "[resourceId('Microsoft.Web/connections', variables('SentinelConnectionName'))]"
             ],
             "properties": {
-                "state": "Enabled",
+                "state": "Disabled",
                 "definition": {
                     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
                     "contentVersion": "1.0.0.0",
@@ -230,7 +229,7 @@
                             "type": "Select",
                             "inputs": {
                                 "from": "@variables('existing_incidents')",
-                                "select": "@split(split(coalesce(item()?['properties']?['title'], ''), '#')[1], ' ')[0]"
+                                "select": "@concat(split(split(coalesce(item()?['properties']?['title'], ''), '[MSSP-')[1], ']')[0], ':', split(split(coalesce(item()?['properties']?['title'], ''), '#')[1], ' ')[0])"
                             },
                             "runAfter": { "Pagination_Loop_Incidents": ["Succeeded"] }
                         },
@@ -341,7 +340,7 @@
                                                     "actions": {
                                                         "Check_If_Already_Exists": {
                                                             "type": "If",
-                                                            "expression": { "and": [{ "contains": ["@body('Extract_Existing_IDs')", "@string(items('For_Each_Alarm')?['alarm_id'])"] }] },
+                                                            "expression": { "and": [{ "contains": ["@body('Extract_Existing_IDs')", "@concat(items('For_Each_Company')?['CompanyName'], ':', string(items('For_Each_Alarm')?['alarm_id']))"] }] },
                                                             "actions": {},
                                                             "else": {
                                                                 "actions": {
@@ -429,7 +428,7 @@
                                                                     },
                                                                     "Check_Audit_Enabled": {
                                                                         "type": "If",
-                                                                        "runAfter": { "Check_If_Open_Status": ["Succeeded"] },
+                                                                        "runAfter": { "Check_If_Open_Status": ["Succeeded", "Failed"] },
                                                                         "expression": { "and": [{ "equals": ["@parameters('EnableAuditLogging')", true] }] },
                                                                         "actions": {
                                                                             "Log_Audit_Event": {
@@ -439,7 +438,7 @@
                                                                                     "uri": "@{concat(parameters('AuditDcrEndpoint'), '/dataCollectionRules/', parameters('AuditDcrImmutableId'), '/streams/', parameters('AuditStreamName'), '?api-version=2023-01-01')}",
                                                                                     "headers": { "Content-Type": "application/json" },
                                                                                     "authentication": { "type": "ManagedServiceIdentity", "audience": "https://monitor.azure.com" },
-                                                                                    "body": [{ "TimeGenerated": "@{utcNow()}", "EventType": "AlarmImported", "AlarmId": "@{items('For_Each_Alarm')?['alarm_id']}", "IncidentId": "@{items('For_Each_Alarm')?['alarm_id']}", "AlarmType": "@{coalesce(items('For_Each_Alarm')?['alarm_type_details']?['alarm_main_type'], 'N/A')}", "Status": "@{items('For_Each_Alarm')?['status']}", "Severity": "@{items('For_Each_Alarm')?['alarm_risk_level']}", "Message": "@{concat('Alarm imported for company ', items('For_Each_Company')?['CompanyName'])}", "FullAlarmJson": "@items('For_Each_Alarm')", "CompanyId": "@{items('For_Each_Company')?['CompanyId']}", "CompanyName": "@{items('For_Each_Company')?['CompanyName']}" }]
+                                                                                    "body": [{ "TimeGenerated": "@{utcNow()}", "EventType": "@{if(equals(actions('Check_If_Open_Status')['status'], 'Succeeded'), 'AlarmImported', 'ImportError')}", "AlarmId": "@{items('For_Each_Alarm')?['alarm_id']}", "IncidentId": "@{items('For_Each_Alarm')?['alarm_id']}", "AlarmType": "@{coalesce(items('For_Each_Alarm')?['alarm_type_details']?['alarm_main_type'], 'N/A')}", "Status": "@{items('For_Each_Alarm')?['status']}", "Severity": "@{items('For_Each_Alarm')?['alarm_risk_level']}", "Message": "@{if(equals(actions('Check_If_Open_Status')['status'], 'Succeeded'), concat('Alarm imported for company ', items('For_Each_Company')?['CompanyName']), concat('Import failed for alarm ', string(items('For_Each_Alarm')?['alarm_id']), ' - company ', items('For_Each_Company')?['CompanyName']))}", "FullAlarmJson": "@items('For_Each_Alarm')", "CompanyId": "@{items('For_Each_Company')?['CompanyId']}", "CompanyName": "@{items('For_Each_Company')?['CompanyName']}" }]
                                                                                 },
                                                                                 "runAfter": {}
                                                                             }
@@ -448,7 +447,7 @@
                                                                     },
                                                                     "Check_Alarms_Table_Enabled": {
                                                                         "type": "If",
-                                                                        "runAfter": { "Check_Audit_Enabled": ["Succeeded"] },
+                                                                        "runAfter": { "Check_Audit_Enabled": ["Succeeded", "Failed"] },
                                                                         "expression": { "and": [{ "equals": ["@parameters('EnableAlarmsTable')", true] }] },
                                                                         "actions": {
                                                                             "Ingest_To_Custom_Table": {
@@ -495,7 +494,27 @@
                                 },
                                 "Scope_Catch_Company": {
                                     "type": "Scope",
-                                    "actions": {},
+                                    "actions": {
+                                        "Check_Catch_Audit": {
+                                            "type": "If",
+                                            "expression": { "and": [{ "equals": ["@parameters('EnableAuditLogging')", true] }] },
+                                            "actions": {
+                                                "Log_Company_Error": {
+                                                    "type": "Http",
+                                                    "inputs": {
+                                                        "method": "POST",
+                                                        "uri": "@{concat(parameters('AuditDcrEndpoint'), '/dataCollectionRules/', parameters('AuditDcrImmutableId'), '/streams/', parameters('AuditStreamName'), '?api-version=2023-01-01')}",
+                                                        "headers": { "Content-Type": "application/json" },
+                                                        "authentication": { "type": "ManagedServiceIdentity", "audience": "https://monitor.azure.com" },
+                                                        "body": [{ "TimeGenerated": "@{utcNow()}", "EventType": "CompanyImportFailed", "AlarmId": "", "IncidentId": "", "AlarmType": "", "Status": "Failed", "Severity": "High", "Message": "@{concat('Company import failed: ', items('For_Each_Company')?['CompanyName'], ' (ID: ', items('For_Each_Company')?['CompanyId'], ')')}", "FullAlarmJson": "", "CompanyId": "@{items('For_Each_Company')?['CompanyId']}", "CompanyName": "@{items('For_Each_Company')?['CompanyName']}" }]
+                                                    },
+                                                    "runAfter": {}
+                                                }
+                                            },
+                                            "else": { "actions": {} },
+                                            "runAfter": {}
+                                        }
+                                    },
                                     "runAfter": {
                                         "Scope_Try_Company": ["Failed", "Skipped", "TimedOut"]
                                     }
@@ -555,6 +574,18 @@
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('LogAnalyticsReaderRoleId'))]",
                 "principalId": "[reference(resourceId('Microsoft.Logic/workflows', parameters('PlaybookName')), '2019-05-01', 'Full').identity.principalId]",
                 "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "type": "Microsoft.Insights/diagnosticSettings",
+            "apiVersion": "2021-05-01-preview",
+            "scope": "[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]",
+            "name": "[concat(parameters('PlaybookName'), '-diagnostics')]",
+            "dependsOn": ["[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]"],
+            "properties": {
+                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName'))]",
+                "logs": [{ "categoryGroup": "allLogs", "enabled": true }],
+                "metrics": [{ "category": "AllMetrics", "enabled": true }]
             }
         }
     ],

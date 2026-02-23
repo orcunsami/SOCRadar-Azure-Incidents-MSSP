@@ -1,12 +1,12 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0",
+    "contentVersion": "1.0.0.0",
     "metadata": {
         "title": "SOCRadar-MSSP-Sync",
         "description": "Multi-tenant incident sync for MSSP. Routes closed Sentinel incidents back to the correct SOCRadar tenant with classification mapping and per-tenant API key resolution.",
         "version": "1.0.0",
         "author": "SOCRadar",
-        "lastUpdateTime": "2026-02-21T00:00:00.000Z"
+        "lastUpdateTime": "2026-02-23T00:00:00.000Z"
     },
     "parameters": {
         "PlaybookName": {
@@ -29,6 +29,21 @@
             "maxValue": 1440,
             "metadata": { "description": "Polling interval in minutes (1-1440)" }
         },
+        "EnableAuditLogging": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": { "description": "Enable audit logging to Log Analytics custom table" }
+        },
+        "AuditDcrEndpoint": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": { "description": "Audit DCR endpoint (required if EnableAuditLogging=true)" }
+        },
+        "AuditDcrImmutableId": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": { "description": "Audit DCR immutable ID (required if EnableAuditLogging=true)" }
+        },
         "_triggerStartTime": {
             "type": "string",
             "defaultValue": "[dateTimeAdd(utcNow(), 'PT3M')]",
@@ -37,7 +52,8 @@
     },
     "variables": {
         "SentinelConnectionName": "[concat('azuresentinel-', parameters('PlaybookName'))]",
-        "SentinelContributorRoleId": "ab8e14d6-4a74-4a29-9ba8-549422addade"
+        "SentinelContributorRoleId": "ab8e14d6-4a74-4a29-9ba8-549422addade",
+        "AuditStreamName": "Custom-SOCRadarAuditLog_CL"
     },
     "resources": [
         {
@@ -64,7 +80,7 @@
                 "[resourceId('Microsoft.Web/connections', variables('SentinelConnectionName'))]"
             ],
             "properties": {
-                "state": "Enabled",
+                "state": "Disabled",
                 "definition": {
                     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
                     "contentVersion": "1.0.0.0",
@@ -72,7 +88,11 @@
                         "$connections": { "defaultValue": {}, "type": "Object" },
                         "CompanyConfigs": { "type": "SecureObject" },
                         "WorkspaceName": { "type": "String" },
-                        "PollingIntervalMinutes": { "type": "Int" }
+                        "PollingIntervalMinutes": { "type": "Int" },
+                        "EnableAuditLogging": { "type": "Bool", "defaultValue": false },
+                        "AuditDcrEndpoint": { "type": "String", "defaultValue": "" },
+                        "AuditDcrImmutableId": { "type": "String", "defaultValue": "" },
+                        "AuditStreamName": { "type": "String", "defaultValue": "Custom-SOCRadarAuditLog_CL" }
                     },
                     "triggers": {
                         "Recurrence": {
@@ -81,7 +101,8 @@
                                 "frequency": "Minute",
                                 "interval": "[parameters('PollingIntervalMinutes')]",
                                 "startTime": "[parameters('_triggerStartTime')]"
-                            }
+                            },
+                            "operationOptions": "SingleInstance"
                         }
                     },
                     "actions": {
@@ -239,6 +260,37 @@
                                                 "retryPolicy": { "type": "exponential", "count": 4, "interval": "PT10S", "maximumInterval": "PT1H" }
                                             },
                                             "runAfter": { "Update_SOCRadar_Severity": ["Succeeded", "Failed", "Skipped", "TimedOut"] }
+                                        },
+                                        "Check_Sync_Audit": {
+                                            "type": "If",
+                                            "expression": { "and": [{ "equals": ["@parameters('EnableAuditLogging')", true] }] },
+                                            "actions": {
+                                                "Log_Sync_Event": {
+                                                    "type": "Http",
+                                                    "inputs": {
+                                                        "method": "POST",
+                                                        "uri": "@{concat(parameters('AuditDcrEndpoint'), '/dataCollectionRules/', parameters('AuditDcrImmutableId'), '/streams/', parameters('AuditStreamName'), '?api-version=2023-01-01')}",
+                                                        "headers": { "Content-Type": "application/json" },
+                                                        "authentication": { "type": "ManagedServiceIdentity", "audience": "https://monitor.azure.com" },
+                                                        "body": [{
+                                                            "TimeGenerated": "@{utcNow()}",
+                                                            "EventType": "IncidentSynced",
+                                                            "AlarmId": "@{outputs('Extract_Alarm_ID')}",
+                                                            "IncidentId": "@{items('For_Each_Incident')?['properties']?['incidentNumber']}",
+                                                            "CompanyId": "@{first(body('Filter_Company_Config'))?['CompanyId']}",
+                                                            "CompanyName": "@{first(body('Filter_Company_Config'))?['CompanyName']}",
+                                                            "AlarmType": "",
+                                                            "Status": "@{coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unclassified')}",
+                                                            "Severity": "@{coalesce(items('For_Each_Incident')?['properties']?['severity'], 'Medium')}",
+                                                            "Message": "@{concat('Incident synced: classification=', coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unknown'))}",
+                                                            "FullAlarmJson": ""
+                                                        }]
+                                                    },
+                                                    "runAfter": {}
+                                                }
+                                            },
+                                            "else": { "actions": {} },
+                                            "runAfter": { "Add_Synced_Tag": ["Succeeded", "Failed"] }
                                         }
                                     },
                                     "else": { "actions": {} },
@@ -262,7 +314,11 @@
                     },
                     "CompanyConfigs": { "value": "[parameters('CompanyConfigs')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
-                    "PollingIntervalMinutes": { "value": "[parameters('PollingIntervalMinutes')]" }
+                    "PollingIntervalMinutes": { "value": "[parameters('PollingIntervalMinutes')]" },
+                    "EnableAuditLogging": { "value": "[parameters('EnableAuditLogging')]" },
+                    "AuditDcrEndpoint": { "value": "[parameters('AuditDcrEndpoint')]" },
+                    "AuditDcrImmutableId": { "value": "[parameters('AuditDcrImmutableId')]" },
+                    "AuditStreamName": { "value": "[variables('AuditStreamName')]" }
                 }
             }
         },
@@ -275,6 +331,18 @@
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('SentinelContributorRoleId'))]",
                 "principalId": "[reference(resourceId('Microsoft.Logic/workflows', parameters('PlaybookName')), '2019-05-01', 'Full').identity.principalId]",
                 "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "type": "Microsoft.Insights/diagnosticSettings",
+            "apiVersion": "2021-05-01-preview",
+            "scope": "[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]",
+            "name": "[concat(parameters('PlaybookName'), '-diagnostics')]",
+            "dependsOn": ["[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]"],
+            "properties": {
+                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName'))]",
+                "logs": [{ "categoryGroup": "allLogs", "enabled": true }],
+                "metrics": [{ "category": "AllMetrics", "enabled": true }]
             }
         }
     ],
