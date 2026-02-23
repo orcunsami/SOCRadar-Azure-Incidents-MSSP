@@ -2,6 +2,8 @@
 
 Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Sentinel for MSSP environments.
 
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Forcunsami%2FSOCRadar-Azure-Incidents-MSSP%2Fmaster%2Fazuredeploy.json)
+
 ## Prerequisites
 
 - Microsoft Sentinel workspace
