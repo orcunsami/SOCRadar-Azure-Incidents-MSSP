@@ -14,9 +14,17 @@
             "defaultValue": "SOCRadar-MSSP-Sync",
             "metadata": { "description": "Name of the Logic App" }
         },
-        "CompanyConfigs": {
-            "type": "secureObject",
-            "metadata": { "description": "Multi-tenant company configurations: {\"companies\": [{\"CompanyId\": \"330\", \"CompanyName\": \"ACME\", \"ApiKey\": \"xxx\"}, ...]}" }
+        "SocradarApiKey": {
+            "type": "securestring",
+            "metadata": { "description": "SOCRadar MSSP API Key (single key for all tenants)" }
+        },
+        "CompanyIds": {
+            "type": "string",
+            "metadata": { "description": "Comma-separated SOCRadar Company IDs (e.g., 330,331,332)" }
+        },
+        "CompanyNames": {
+            "type": "string",
+            "metadata": { "description": "Comma-separated Company Names matching IDs (e.g., ACME,Contoso,Fabrikam)" }
         },
         "WorkspaceName": {
             "type": "string",
@@ -86,7 +94,9 @@
                     "contentVersion": "1.0.0.0",
                     "parameters": {
                         "$connections": { "defaultValue": {}, "type": "Object" },
-                        "CompanyConfigs": { "type": "SecureObject" },
+                        "SocradarApiKey": { "type": "SecureString" },
+                        "CompanyIds": { "type": "String" },
+                        "CompanyNames": { "type": "String" },
                         "WorkspaceName": { "type": "String" },
                         "PollingIntervalMinutes": { "type": "Int" },
                         "EnableAuditLogging": { "type": "Bool", "defaultValue": false },
@@ -106,10 +116,21 @@
                         }
                     },
                     "actions": {
+                        "Build_Company_Array": {
+                            "type": "Select",
+                            "inputs": {
+                                "from": "@range(0, length(split(parameters('CompanyIds'), ',')))",
+                                "select": {
+                                    "CompanyId": "@trim(split(parameters('CompanyIds'), ',')[item()])",
+                                    "CompanyName": "@trim(split(parameters('CompanyNames'), ',')[item()])"
+                                }
+                            },
+                            "runAfter": {}
+                        },
                         "Calculate_Lookback_Time": {
                             "type": "Compose",
                             "inputs": "@addMinutes(utcNow(), mul(-2, parameters('PollingIntervalMinutes')))",
-                            "runAfter": {}
+                            "runAfter": { "Build_Company_Array": ["Succeeded"] }
                         },
                         "Initialize_Closed_Incidents": {
                             "type": "InitializeVariable",
@@ -172,7 +193,7 @@
                                 "Filter_Company_Config": {
                                     "type": "Query",
                                     "inputs": {
-                                        "from": "@parameters('CompanyConfigs')['companies']",
+                                        "from": "@body('Build_Company_Array')",
                                         "where": "@equals(item()?['CompanyName'], outputs('Extract_Company_Name'))"
                                     },
                                     "runAfter": { "Extract_Company_Name": ["Succeeded"] }
@@ -198,7 +219,7 @@
                                                 "method": "POST",
                                                 "uri": "https://platform.socradar.com/api/company/@{first(body('Filter_Company_Config'))?['CompanyId']}/alarms/status/change",
                                                 "headers": {
-                                                    "API-Key": "@{first(body('Filter_Company_Config'))?['ApiKey']}",
+                                                    "API-Key": "@{parameters('SocradarApiKey')}",
                                                     "Content-Type": "application/json"
                                                 },
                                                 "body": {
@@ -222,7 +243,7 @@
                                                 "method": "POST",
                                                 "uri": "https://platform.socradar.com/api/company/@{first(body('Filter_Company_Config'))?['CompanyId']}/alarm/severity",
                                                 "headers": {
-                                                    "API-Key": "@{first(body('Filter_Company_Config'))?['ApiKey']}",
+                                                    "API-Key": "@{parameters('SocradarApiKey')}",
                                                     "Content-Type": "application/json"
                                                 },
                                                 "body": {
@@ -312,7 +333,9 @@
                             }
                         }
                     },
-                    "CompanyConfigs": { "value": "[parameters('CompanyConfigs')]" },
+                    "SocradarApiKey": { "value": "[parameters('SocradarApiKey')]" },
+                    "CompanyIds": { "value": "[parameters('CompanyIds')]" },
+                    "CompanyNames": { "value": "[parameters('CompanyNames')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
                     "PollingIntervalMinutes": { "value": "[parameters('PollingIntervalMinutes')]" },
                     "EnableAuditLogging": { "value": "[parameters('EnableAuditLogging')]" },

@@ -14,9 +14,17 @@
             "defaultValue": "SOCRadar-MSSP-Import",
             "metadata": { "description": "Name of the Logic App" }
         },
-        "CompanyConfigs": {
-            "type": "secureObject",
-            "metadata": { "description": "Multi-tenant company configurations: {\"companies\": [{\"CompanyId\": \"330\", \"CompanyName\": \"ACME\", \"ApiKey\": \"xxx\"}, ...]}" }
+        "SocradarApiKey": {
+            "type": "securestring",
+            "metadata": { "description": "SOCRadar MSSP API Key (single key for all tenants)" }
+        },
+        "CompanyIds": {
+            "type": "string",
+            "metadata": { "description": "Comma-separated SOCRadar Company IDs (e.g., 330,331,332)" }
+        },
+        "CompanyNames": {
+            "type": "string",
+            "metadata": { "description": "Comma-separated Company Names matching IDs (e.g., ACME,Contoso,Fabrikam)" }
         },
         "WorkspaceName": {
             "type": "string",
@@ -119,7 +127,9 @@
                     "contentVersion": "1.0.0.0",
                     "parameters": {
                         "$connections": { "defaultValue": {}, "type": "Object" },
-                        "CompanyConfigs": { "type": "SecureObject" },
+                        "SocradarApiKey": { "type": "SecureString" },
+                        "CompanyIds": { "type": "String" },
+                        "CompanyNames": { "type": "String" },
                         "WorkspaceName": { "type": "String" },
                         "PollingIntervalMinutes": { "type": "Int" },
                         "InitialLookbackMinutes": { "type": "Int" },
@@ -147,6 +157,17 @@
                         }
                     },
                     "actions": {
+                        "Build_Company_Array": {
+                            "type": "Select",
+                            "inputs": {
+                                "from": "@range(0, length(split(parameters('CompanyIds'), ',')))",
+                                "select": {
+                                    "CompanyId": "@trim(split(parameters('CompanyIds'), ',')[item()])",
+                                    "CompanyName": "@trim(split(parameters('CompanyNames'), ',')[item()])"
+                                }
+                            },
+                            "runAfter": {}
+                        },
                         "Query_Existing_MSSP_Incidents": {
                             "type": "Http",
                             "inputs": {
@@ -155,7 +176,7 @@
                                 "authentication": { "type": "ManagedServiceIdentity" },
                                 "retryPolicy": { "type": "exponential", "count": 4, "interval": "PT10S", "maximumInterval": "PT1H" }
                             },
-                            "runAfter": {}
+                            "runAfter": { "Build_Company_Array": ["Succeeded"] }
                         },
                         "Determine_Lookback": {
                             "type": "Compose",
@@ -235,7 +256,7 @@
                         },
                         "For_Each_Company": {
                             "type": "Foreach",
-                            "foreach": "@parameters('CompanyConfigs')['companies']",
+                            "foreach": "@body('Build_Company_Array')",
                             "runtimeConfiguration": { "concurrency": { "repetitions": 1 } },
                             "actions": {
                                 "Scope_Try_Company": {
@@ -266,7 +287,7 @@
                                                     "inputs": {
                                                         "method": "GET",
                                                         "uri": "https://platform.socradar.com/api/company/@{items('For_Each_Company')?['CompanyId']}/incidents/v4",
-                                                        "headers": { "API-Key": "@{items('For_Each_Company')?['ApiKey']}" },
+                                                        "headers": { "API-Key": "@{parameters('SocradarApiKey')}" },
                                                         "queries": {
                                                             "page": "@{variables('page')}",
                                                             "limit": "100",
@@ -535,7 +556,9 @@
                             }
                         }
                     },
-                    "CompanyConfigs": { "value": "[parameters('CompanyConfigs')]" },
+                    "SocradarApiKey": { "value": "[parameters('SocradarApiKey')]" },
+                    "CompanyIds": { "value": "[parameters('CompanyIds')]" },
+                    "CompanyNames": { "value": "[parameters('CompanyNames')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
                     "PollingIntervalMinutes": { "value": "[parameters('PollingIntervalMinutes')]" },
                     "InitialLookbackMinutes": { "value": "[parameters('InitialLookbackMinutes')]" },

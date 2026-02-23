@@ -7,7 +7,7 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 ## Prerequisites
 
 - Microsoft Sentinel workspace
-- SOCRadar API Keys (one per tenant/company)
+- SOCRadar MSSP API key
 
 ## Configuration
 
@@ -16,18 +16,9 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 | Parameter | Description |
 |-----------|-------------|
 | `WorkspaceName` | Your Sentinel workspace name |
-| `SocradarApiKey` | Primary SOCRadar API key |
-| `CompanyId` | Primary SOCRadar company ID |
-| `CompanyConfigs` | JSON array of tenant configurations |
-
-### CompanyConfigs Format
-
-```json
-[
-  {"CompanyId": "100", "CompanyName": "TenantA", "ApiKey": "key-a"},
-  {"CompanyId": "200", "CompanyName": "TenantB", "ApiKey": "key-b"}
-]
-```
+| `SocradarApiKey` | SOCRadar MSSP API key |
+| `CompanyIds` | Comma-separated SOCRadar company IDs (e.g., `330,331,332`) |
+| `CompanyNames` | Comma-separated company names matching IDs (e.g., `ACME,Contoso,Fabrikam`) |
 
 ### Optional Parameters
 
