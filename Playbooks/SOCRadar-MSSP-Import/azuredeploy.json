@@ -14,7 +14,7 @@
             "defaultValue": "SOCRadar-MSSP-Import",
             "metadata": { "description": "Name of the Logic App" }
         },
-        "SocradarApiKey": {
+        "SOCRadarAPIKey": {
             "type": "securestring",
             "metadata": { "description": "SOCRadar MSSP API Key (single key for all tenants)" }
         },
@@ -127,7 +127,7 @@
                     "contentVersion": "1.0.0.0",
                     "parameters": {
                         "$connections": { "defaultValue": {}, "type": "Object" },
-                        "SocradarApiKey": { "type": "SecureString" },
+                        "SOCRadarAPIKey": { "type": "SecureString" },
                         "CompanyIds": { "type": "String" },
                         "CompanyNames": { "type": "String" },
                         "WorkspaceName": { "type": "String" },
@@ -287,7 +287,7 @@
                                                     "inputs": {
                                                         "method": "GET",
                                                         "uri": "https://platform.socradar.com/api/company/@{items('For_Each_Company')?['CompanyId']}/incidents/v4",
-                                                        "headers": { "API-Key": "@{parameters('SocradarApiKey')}" },
+                                                        "headers": { "API-Key": "@{parameters('SOCRadarAPIKey')}" },
                                                         "queries": {
                                                             "page": "@{variables('page')}",
                                                             "limit": "100",
@@ -556,7 +556,7 @@
                             }
                         }
                     },
-                    "SocradarApiKey": { "value": "[parameters('SocradarApiKey')]" },
+                    "SOCRadarAPIKey": { "value": "[parameters('SOCRadarAPIKey')]" },
                     "CompanyIds": { "value": "[parameters('CompanyIds')]" },
                     "CompanyNames": { "value": "[parameters('CompanyNames')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
