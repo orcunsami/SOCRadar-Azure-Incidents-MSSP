@@ -26,7 +26,7 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 |-----------|---------|-------------|
 | `PollingIntervalMinutes` | 5 | How often to check for alarms (1-60 min) |
 | `InitialLookbackMinutes` | 600 | First run lookback (default: 10 hours) |
-| `ImportAllStatuses` | true | Import all statuses or only OPEN |
+| `ImportAllStatuses` | false | Import all statuses or only OPEN |
 | `EnableAuditLogging` | true | Log operations to Log Analytics |
 | `EnableAlarmsTable` | true | Store alarms in custom table |
 

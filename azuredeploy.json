@@ -60,7 +60,7 @@
         },
         "ImportAllStatuses": {
             "type": "bool",
-            "defaultValue": true,
+            "defaultValue": false,
             "metadata": {
                 "description": "Import all alarm statuses (OPEN, RESOLVED, MITIGATED, FALSE_POSITIVE). Default: only OPEN"
             }
