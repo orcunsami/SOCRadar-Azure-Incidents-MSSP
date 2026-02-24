@@ -12,50 +12,70 @@
         "PlaybookName": {
             "type": "string",
             "defaultValue": "SOCRadar-MSSP-Sync",
-            "metadata": { "description": "Name of the Logic App" }
+            "metadata": {
+                "description": "Name of the Logic App"
+            }
         },
         "SocradarApiKey": {
             "type": "securestring",
-            "metadata": { "description": "SOCRadar Platform API Key" }
+            "metadata": {
+                "description": "SOCRadar Platform API Key"
+            }
         },
         "CompanyIds": {
             "type": "string",
-            "metadata": { "description": "Comma-separated SOCRadar Company IDs (e.g., 330,331,332)" }
+            "metadata": {
+                "description": "Comma-separated SOCRadar Company IDs (e.g., 330,331,332)"
+            }
         },
         "CompanyNames": {
             "type": "string",
-            "metadata": { "description": "Comma-separated Company Names matching IDs (e.g., ACME,Contoso,Fabrikam)" }
+            "metadata": {
+                "description": "Comma-separated Company Names matching IDs (e.g., ACME,Contoso,Fabrikam)"
+            }
         },
         "WorkspaceName": {
             "type": "string",
-            "metadata": { "description": "Microsoft Sentinel Log Analytics Workspace Name" }
+            "metadata": {
+                "description": "Microsoft Sentinel Log Analytics Workspace Name"
+            }
         },
         "PollingIntervalMinutes": {
             "type": "int",
             "defaultValue": 5,
             "minValue": 1,
             "maxValue": 1440,
-            "metadata": { "description": "Polling interval in minutes (1-1440)" }
+            "metadata": {
+                "description": "Polling interval in minutes (1-1440)"
+            }
         },
         "EnableAuditLogging": {
             "type": "bool",
-            "defaultValue": false,
-            "metadata": { "description": "Enable audit logging to Log Analytics custom table" }
+            "defaultValue": true,
+            "metadata": {
+                "description": "Enable audit logging to Log Analytics custom table"
+            }
         },
         "AuditDcrEndpoint": {
             "type": "string",
             "defaultValue": "",
-            "metadata": { "description": "Audit DCR endpoint (required if EnableAuditLogging=true)" }
+            "metadata": {
+                "description": "Audit DCR endpoint (required if EnableAuditLogging=true)"
+            }
         },
         "AuditDcrImmutableId": {
             "type": "string",
             "defaultValue": "",
-            "metadata": { "description": "Audit DCR immutable ID (required if EnableAuditLogging=true)" }
+            "metadata": {
+                "description": "Audit DCR immutable ID (required if EnableAuditLogging=true)"
+            }
         },
         "_triggerStartTime": {
             "type": "string",
             "defaultValue": "[dateTimeAdd(utcNow(), 'PT3M')]",
-            "metadata": { "description": "Trigger start time (3 min delay for role propagation)" }
+            "metadata": {
+                "description": "Trigger start time (3 min delay for role propagation)"
+            }
         }
     },
     "variables": {
@@ -83,7 +103,9 @@
             "apiVersion": "2019-05-01",
             "name": "[parameters('PlaybookName')]",
             "location": "[resourceGroup().location]",
-            "identity": { "type": "SystemAssigned" },
+            "identity": {
+                "type": "SystemAssigned"
+            },
             "dependsOn": [
                 "[resourceId('Microsoft.Web/connections', variables('SentinelConnectionName'))]"
             ],
@@ -93,16 +115,41 @@
                     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
                     "contentVersion": "1.0.0.0",
                     "parameters": {
-                        "$connections": { "defaultValue": {}, "type": "Object" },
-                        "SocradarApiKey": { "type": "SecureString" },
-                        "CompanyIds": { "type": "String" },
-                        "CompanyNames": { "type": "String" },
-                        "WorkspaceName": { "type": "String" },
-                        "PollingIntervalMinutes": { "type": "Int" },
-                        "EnableAuditLogging": { "type": "Bool", "defaultValue": false },
-                        "AuditDcrEndpoint": { "type": "String", "defaultValue": "" },
-                        "AuditDcrImmutableId": { "type": "String", "defaultValue": "" },
-                        "AuditStreamName": { "type": "String", "defaultValue": "Custom-SOCRadarAuditLog_CL" }
+                        "$connections": {
+                            "defaultValue": {},
+                            "type": "Object"
+                        },
+                        "SocradarApiKey": {
+                            "type": "SecureString"
+                        },
+                        "CompanyIds": {
+                            "type": "String"
+                        },
+                        "CompanyNames": {
+                            "type": "String"
+                        },
+                        "WorkspaceName": {
+                            "type": "String"
+                        },
+                        "PollingIntervalMinutes": {
+                            "type": "Int"
+                        },
+                        "EnableAuditLogging": {
+                            "type": "Bool",
+                            "defaultValue": false
+                        },
+                        "AuditDcrEndpoint": {
+                            "type": "String",
+                            "defaultValue": ""
+                        },
+                        "AuditDcrImmutableId": {
+                            "type": "String",
+                            "defaultValue": ""
+                        },
+                        "AuditStreamName": {
+                            "type": "String",
+                            "defaultValue": "Custom-SOCRadarAuditLog_CL"
+                        }
                     },
                     "triggers": {
                         "Recurrence": {
@@ -130,55 +177,119 @@
                         "Calculate_Lookback_Time": {
                             "type": "Compose",
                             "inputs": "@addMinutes(utcNow(), mul(-2, parameters('PollingIntervalMinutes')))",
-                            "runAfter": { "Build_Company_Array": ["Succeeded"] }
+                            "runAfter": {
+                                "Build_Company_Array": [
+                                    "Succeeded"
+                                ]
+                            }
                         },
                         "Initialize_Closed_Incidents": {
                             "type": "InitializeVariable",
-                            "inputs": { "variables": [{ "name": "closed_incidents", "type": "array", "value": [] }] },
-                            "runAfter": { "Calculate_Lookback_Time": ["Succeeded"] }
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "closed_incidents",
+                                        "type": "array",
+                                        "value": []
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Calculate_Lookback_Time": [
+                                    "Succeeded"
+                                ]
+                            }
                         },
                         "Initialize_Closed_NextLink": {
                             "type": "InitializeVariable",
-                            "inputs": { "variables": [{ "name": "closed_next_link", "type": "string", "value": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1000&$filter=properties/labels/any(label: label/labelName eq ''SOCRadar'') and properties/status eq ''Closed'' and properties/lastModifiedTimeUtc ge @{outputs(''Calculate_Lookback_Time'')} and startswith(properties/title, ''[MSSP-'')')]" }] },
-                            "runAfter": { "Initialize_Closed_Incidents": ["Succeeded"] }
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "closed_next_link",
+                                        "type": "string",
+                                        "value": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1000&$filter=properties/labels/any(label: label/labelName eq ''SOCRadar'') and properties/status eq ''Closed'' and properties/lastModifiedTimeUtc ge @{outputs(''Calculate_Lookback_Time'')} and startswith(properties/title, ''[MSSP-'')')]"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Initialize_Closed_Incidents": [
+                                    "Succeeded"
+                                ]
+                            }
                         },
                         "Pagination_Loop_Closed": {
                             "type": "Until",
                             "expression": "@equals(variables('closed_next_link'), '')",
-                            "limit": { "count": 100, "timeout": "PT1H" },
+                            "limit": {
+                                "count": 100,
+                                "timeout": "PT1H"
+                            },
                             "actions": {
                                 "Query_Closed_Page": {
                                     "type": "Http",
                                     "inputs": {
                                         "method": "GET",
                                         "uri": "@variables('closed_next_link')",
-                                        "authentication": { "type": "ManagedServiceIdentity" },
-                                        "retryPolicy": { "type": "exponential", "count": 4, "interval": "PT10S", "maximumInterval": "PT1H" }
+                                        "authentication": {
+                                            "type": "ManagedServiceIdentity"
+                                        },
+                                        "retryPolicy": {
+                                            "type": "exponential",
+                                            "count": 4,
+                                            "interval": "PT10S",
+                                            "maximumInterval": "PT1H"
+                                        }
                                     },
                                     "runAfter": {}
                                 },
                                 "Compose_New_Closed": {
                                     "type": "Compose",
                                     "inputs": "@union(variables('closed_incidents'), coalesce(body('Query_Closed_Page')?['value'], json('[]')))",
-                                    "runAfter": { "Query_Closed_Page": ["Succeeded"] }
+                                    "runAfter": {
+                                        "Query_Closed_Page": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 },
                                 "Set_Closed_Incidents": {
                                     "type": "SetVariable",
-                                    "inputs": { "name": "closed_incidents", "value": "@outputs('Compose_New_Closed')" },
-                                    "runAfter": { "Compose_New_Closed": ["Succeeded"] }
+                                    "inputs": {
+                                        "name": "closed_incidents",
+                                        "value": "@outputs('Compose_New_Closed')"
+                                    },
+                                    "runAfter": {
+                                        "Compose_New_Closed": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 },
                                 "Set_Closed_NextLink": {
                                     "type": "SetVariable",
-                                    "inputs": { "name": "closed_next_link", "value": "@coalesce(body('Query_Closed_Page')?['nextLink'], '')" },
-                                    "runAfter": { "Set_Closed_Incidents": ["Succeeded"] }
+                                    "inputs": {
+                                        "name": "closed_next_link",
+                                        "value": "@coalesce(body('Query_Closed_Page')?['nextLink'], '')"
+                                    },
+                                    "runAfter": {
+                                        "Set_Closed_Incidents": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 }
                             },
-                            "runAfter": { "Initialize_Closed_NextLink": ["Succeeded"] }
+                            "runAfter": {
+                                "Initialize_Closed_NextLink": [
+                                    "Succeeded"
+                                ]
+                            }
                         },
                         "For_Each_Incident": {
                             "type": "Foreach",
                             "foreach": "@variables('closed_incidents')",
-                            "runtimeConfiguration": { "concurrency": { "repetitions": 5 } },
+                            "runtimeConfiguration": {
+                                "concurrency": {
+                                    "repetitions": 5
+                                }
+                            },
                             "actions": {
                                 "Extract_Alarm_ID": {
                                     "type": "Compose",
@@ -188,7 +299,11 @@
                                 "Extract_Company_Name": {
                                     "type": "Compose",
                                     "inputs": "@split(split(items('For_Each_Incident')?['properties']?['title'], '[MSSP-')[1], ']')[0]",
-                                    "runAfter": { "Extract_Alarm_ID": ["Succeeded"] }
+                                    "runAfter": {
+                                        "Extract_Alarm_ID": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 },
                                 "Filter_Company_Config": {
                                     "type": "Query",
@@ -196,20 +311,43 @@
                                         "from": "@body('Build_Company_Array')",
                                         "where": "@equals(item()?['CompanyName'], outputs('Extract_Company_Name'))"
                                     },
-                                    "runAfter": { "Extract_Company_Name": ["Succeeded"] }
+                                    "runAfter": {
+                                        "Extract_Company_Name": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 },
                                 "Check_Has_Synced_Tag": {
                                     "type": "Compose",
                                     "inputs": "@contains(string(coalesce(items('For_Each_Incident')?['properties']?['labels'], json('[]'))), 'Synced')",
-                                    "runAfter": { "Filter_Company_Config": ["Succeeded"] }
+                                    "runAfter": {
+                                        "Filter_Company_Config": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 },
                                 "Check_If_Should_Sync": {
                                     "type": "If",
                                     "expression": {
                                         "and": [
-                                            { "equals": ["@items('For_Each_Incident')?['properties']?['status']", "Closed"] },
-                                            { "equals": ["@outputs('Check_Has_Synced_Tag')", false] },
-                                            { "greater": ["@length(body('Filter_Company_Config'))", 0] }
+                                            {
+                                                "equals": [
+                                                    "@items('For_Each_Incident')?['properties']?['status']",
+                                                    "Closed"
+                                                ]
+                                            },
+                                            {
+                                                "equals": [
+                                                    "@outputs('Check_Has_Synced_Tag')",
+                                                    false
+                                                ]
+                                            },
+                                            {
+                                                "greater": [
+                                                    "@length(body('Filter_Company_Config'))",
+                                                    0
+                                                ]
+                                            }
                                         ]
                                     },
                                     "actions": {
@@ -227,15 +365,30 @@
                                                     "status": "@{if(equals(items('For_Each_Incident')?['properties']?['classification'], 'FalsePositive'), 9, if(equals(items('For_Each_Incident')?['properties']?['classification'], 'BenignPositive'), 12, 2))}",
                                                     "comments": "Closed in Microsoft Sentinel (Classification: @{coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unclassified')})"
                                                 },
-                                                "retryPolicy": { "type": "exponential", "count": 4, "interval": "PT10S", "maximumInterval": "PT1H" }
+                                                "retryPolicy": {
+                                                    "type": "exponential",
+                                                    "count": 4,
+                                                    "interval": "PT10S",
+                                                    "maximumInterval": "PT1H"
+                                                }
                                             },
-                                            "runtimeConfiguration": { "secureData": { "properties": ["inputs"] } },
+                                            "runtimeConfiguration": {
+                                                "secureData": {
+                                                    "properties": [
+                                                        "inputs"
+                                                    ]
+                                                }
+                                            },
                                             "runAfter": {}
                                         },
                                         "Map_Severity": {
                                             "type": "Compose",
                                             "inputs": "@coalesce(items('For_Each_Incident')?['properties']?['severity'], 'Medium')",
-                                            "runAfter": { "Update_SOCRadar_Status": ["Succeeded"] }
+                                            "runAfter": {
+                                                "Update_SOCRadar_Status": [
+                                                    "Succeeded"
+                                                ]
+                                            }
                                         },
                                         "Update_SOCRadar_Severity": {
                                             "type": "Http",
@@ -250,18 +403,37 @@
                                                     "alarm_ids": "@createArray(int(outputs('Extract_Alarm_ID')))",
                                                     "severity": "@{outputs('Map_Severity')}"
                                                 },
-                                                "retryPolicy": { "type": "exponential", "count": 4, "interval": "PT10S", "maximumInterval": "PT1H" }
+                                                "retryPolicy": {
+                                                    "type": "exponential",
+                                                    "count": 4,
+                                                    "interval": "PT10S",
+                                                    "maximumInterval": "PT1H"
+                                                }
                                             },
-                                            "runtimeConfiguration": { "secureData": { "properties": ["inputs"] } },
-                                            "runAfter": { "Map_Severity": ["Succeeded"] }
+                                            "runtimeConfiguration": {
+                                                "secureData": {
+                                                    "properties": [
+                                                        "inputs"
+                                                    ]
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Map_Severity": [
+                                                    "Succeeded"
+                                                ]
+                                            }
                                         },
                                         "Add_Synced_Tag": {
                                             "type": "Http",
                                             "inputs": {
                                                 "method": "PUT",
                                                 "uri": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents/@{items(''For_Each_Incident'')?[''name'']}?api-version=2023-11-01')]",
-                                                "authentication": { "type": "ManagedServiceIdentity" },
-                                                "headers": { "Content-Type": "application/json" },
+                                                "authentication": {
+                                                    "type": "ManagedServiceIdentity"
+                                                },
+                                                "headers": {
+                                                    "Content-Type": "application/json"
+                                                },
                                                 "body": {
                                                     "etag": "@{items('For_Each_Incident')?['etag']}",
                                                     "properties": {
@@ -278,47 +450,92 @@
                                                         "labels": "@union(coalesce(items('For_Each_Incident')?['properties']?['labels'], json('[]')), json('[{\"labelName\": \"Synced\", \"labelType\": \"User\"}]'))"
                                                     }
                                                 },
-                                                "retryPolicy": { "type": "exponential", "count": 4, "interval": "PT10S", "maximumInterval": "PT1H" }
+                                                "retryPolicy": {
+                                                    "type": "exponential",
+                                                    "count": 4,
+                                                    "interval": "PT10S",
+                                                    "maximumInterval": "PT1H"
+                                                }
                                             },
-                                            "runAfter": { "Update_SOCRadar_Severity": ["Succeeded", "Failed", "Skipped", "TimedOut"] }
+                                            "runAfter": {
+                                                "Update_SOCRadar_Severity": [
+                                                    "Succeeded",
+                                                    "Failed",
+                                                    "Skipped",
+                                                    "TimedOut"
+                                                ]
+                                            }
                                         },
                                         "Check_Sync_Audit": {
                                             "type": "If",
-                                            "expression": { "and": [{ "equals": ["@parameters('EnableAuditLogging')", true] }] },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "equals": [
+                                                            "@parameters('EnableAuditLogging')",
+                                                            true
+                                                        ]
+                                                    }
+                                                ]
+                                            },
                                             "actions": {
                                                 "Log_Sync_Event": {
                                                     "type": "Http",
                                                     "inputs": {
                                                         "method": "POST",
                                                         "uri": "@{concat(parameters('AuditDcrEndpoint'), '/dataCollectionRules/', parameters('AuditDcrImmutableId'), '/streams/', parameters('AuditStreamName'), '?api-version=2023-01-01')}",
-                                                        "headers": { "Content-Type": "application/json" },
-                                                        "authentication": { "type": "ManagedServiceIdentity", "audience": "https://monitor.azure.com" },
-                                                        "body": [{
-                                                            "TimeGenerated": "@{utcNow()}",
-                                                            "EventType": "IncidentSynced",
-                                                            "AlarmId": "@{outputs('Extract_Alarm_ID')}",
-                                                            "IncidentId": "@{items('For_Each_Incident')?['properties']?['incidentNumber']}",
-                                                            "CompanyId": "@{first(body('Filter_Company_Config'))?['CompanyId']}",
-                                                            "CompanyName": "@{first(body('Filter_Company_Config'))?['CompanyName']}",
-                                                            "AlarmType": "",
-                                                            "Status": "@{coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unclassified')}",
-                                                            "Severity": "@{coalesce(items('For_Each_Incident')?['properties']?['severity'], 'Medium')}",
-                                                            "Message": "@{concat('Incident synced: classification=', coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unknown'))}",
-                                                            "FullAlarmJson": ""
-                                                        }]
+                                                        "headers": {
+                                                            "Content-Type": "application/json"
+                                                        },
+                                                        "authentication": {
+                                                            "type": "ManagedServiceIdentity",
+                                                            "audience": "https://monitor.azure.com"
+                                                        },
+                                                        "body": [
+                                                            {
+                                                                "TimeGenerated": "@{utcNow()}",
+                                                                "EventType": "IncidentSynced",
+                                                                "AlarmId": "@{outputs('Extract_Alarm_ID')}",
+                                                                "IncidentId": "@{items('For_Each_Incident')?['properties']?['incidentNumber']}",
+                                                                "CompanyId": "@{first(body('Filter_Company_Config'))?['CompanyId']}",
+                                                                "CompanyName": "@{first(body('Filter_Company_Config'))?['CompanyName']}",
+                                                                "AlarmType": "",
+                                                                "Status": "@{coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unclassified')}",
+                                                                "Severity": "@{coalesce(items('For_Each_Incident')?['properties']?['severity'], 'Medium')}",
+                                                                "Message": "@{concat('Incident synced: classification=', coalesce(items('For_Each_Incident')?['properties']?['classification'], 'Unknown'))}",
+                                                                "FullAlarmJson": ""
+                                                            }
+                                                        ]
                                                     },
                                                     "runAfter": {}
                                                 }
                                             },
-                                            "else": { "actions": {} },
-                                            "runAfter": { "Add_Synced_Tag": ["Succeeded", "Failed"] }
+                                            "else": {
+                                                "actions": {}
+                                            },
+                                            "runAfter": {
+                                                "Add_Synced_Tag": [
+                                                    "Succeeded",
+                                                    "Failed"
+                                                ]
+                                            }
                                         }
                                     },
-                                    "else": { "actions": {} },
-                                    "runAfter": { "Check_Has_Synced_Tag": ["Succeeded"] }
+                                    "else": {
+                                        "actions": {}
+                                    },
+                                    "runAfter": {
+                                        "Check_Has_Synced_Tag": [
+                                            "Succeeded"
+                                        ]
+                                    }
                                 }
                             },
-                            "runAfter": { "Pagination_Loop_Closed": ["Succeeded"] }
+                            "runAfter": {
+                                "Pagination_Loop_Closed": [
+                                    "Succeeded"
+                                ]
+                            }
                         }
                     }
                 },
@@ -328,20 +545,42 @@
                             "azuresentinel": {
                                 "connectionId": "[resourceId('Microsoft.Web/connections', variables('SentinelConnectionName'))]",
                                 "connectionName": "[variables('SentinelConnectionName')]",
-                                "connectionProperties": { "authentication": { "type": "ManagedServiceIdentity" } },
+                                "connectionProperties": {
+                                    "authentication": {
+                                        "type": "ManagedServiceIdentity"
+                                    }
+                                },
                                 "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', resourceGroup().location, 'azuresentinel')]"
                             }
                         }
                     },
-                    "SocradarApiKey": { "value": "[parameters('SocradarApiKey')]" },
-                    "CompanyIds": { "value": "[parameters('CompanyIds')]" },
-                    "CompanyNames": { "value": "[parameters('CompanyNames')]" },
-                    "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
-                    "PollingIntervalMinutes": { "value": "[parameters('PollingIntervalMinutes')]" },
-                    "EnableAuditLogging": { "value": "[parameters('EnableAuditLogging')]" },
-                    "AuditDcrEndpoint": { "value": "[parameters('AuditDcrEndpoint')]" },
-                    "AuditDcrImmutableId": { "value": "[parameters('AuditDcrImmutableId')]" },
-                    "AuditStreamName": { "value": "[variables('AuditStreamName')]" }
+                    "SocradarApiKey": {
+                        "value": "[parameters('SocradarApiKey')]"
+                    },
+                    "CompanyIds": {
+                        "value": "[parameters('CompanyIds')]"
+                    },
+                    "CompanyNames": {
+                        "value": "[parameters('CompanyNames')]"
+                    },
+                    "WorkspaceName": {
+                        "value": "[parameters('WorkspaceName')]"
+                    },
+                    "PollingIntervalMinutes": {
+                        "value": "[parameters('PollingIntervalMinutes')]"
+                    },
+                    "EnableAuditLogging": {
+                        "value": "[parameters('EnableAuditLogging')]"
+                    },
+                    "AuditDcrEndpoint": {
+                        "value": "[parameters('AuditDcrEndpoint')]"
+                    },
+                    "AuditDcrImmutableId": {
+                        "value": "[parameters('AuditDcrImmutableId')]"
+                    },
+                    "AuditStreamName": {
+                        "value": "[variables('AuditStreamName')]"
+                    }
                 }
             }
         },
@@ -349,7 +588,9 @@
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
             "name": "[guid(resourceGroup().id, parameters('PlaybookName'), variables('SentinelContributorRoleId'))]",
-            "dependsOn": [ "[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]" ],
+            "dependsOn": [
+                "[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]"
+            ],
             "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('SentinelContributorRoleId'))]",
                 "principalId": "[reference(resourceId('Microsoft.Logic/workflows', parameters('PlaybookName')), '2019-05-01', 'Full').identity.principalId]",
@@ -361,18 +602,42 @@
             "apiVersion": "2021-05-01-preview",
             "scope": "[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]",
             "name": "[concat(parameters('PlaybookName'), '-diagnostics')]",
-            "dependsOn": ["[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]"],
+            "dependsOn": [
+                "[resourceId('Microsoft.Logic/workflows', parameters('PlaybookName'))]"
+            ],
             "properties": {
                 "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName'))]",
-                "logs": [{ "categoryGroup": "allLogs", "enabled": true }],
-                "metrics": [{ "category": "AllMetrics", "enabled": true }]
+                "logs": [
+                    {
+                        "categoryGroup": "allLogs",
+                        "enabled": true
+                    }
+                ],
+                "metrics": [
+                    {
+                        "category": "AllMetrics",
+                        "enabled": true
+                    }
+                ]
             }
         }
     ],
     "outputs": {
-        "logicAppName": { "type": "string", "value": "[parameters('PlaybookName')]" },
-        "pollingInterval": { "type": "string", "value": "[concat(parameters('PollingIntervalMinutes'), ' minutes')]" },
-        "lookbackWindow": { "type": "string", "value": "[concat(mul(2, parameters('PollingIntervalMinutes')), ' minutes (2x polling)')]" },
-        "filter": { "type": "string", "value": "SOCRadar label + Closed + lastModified + MSSP title (API) + Synced check (Logic App)" }
+        "logicAppName": {
+            "type": "string",
+            "value": "[parameters('PlaybookName')]"
+        },
+        "pollingInterval": {
+            "type": "string",
+            "value": "[concat(parameters('PollingIntervalMinutes'), ' minutes')]"
+        },
+        "lookbackWindow": {
+            "type": "string",
+            "value": "[concat(mul(2, parameters('PollingIntervalMinutes')), ' minutes (2x polling)')]"
+        },
+        "filter": {
+            "type": "string",
+            "value": "SOCRadar label + Closed + lastModified + MSSP title (API) + Synced check (Logic App)"
+        }
     }
 }
