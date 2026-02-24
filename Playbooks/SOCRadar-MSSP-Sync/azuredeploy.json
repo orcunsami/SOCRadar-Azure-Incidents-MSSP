@@ -14,9 +14,9 @@
             "defaultValue": "SOCRadar-MSSP-Sync",
             "metadata": { "description": "Name of the Logic App" }
         },
-        "SOCRadarAPIKey": {
+        "SOCRadarApiKey": {
             "type": "securestring",
-            "metadata": { "description": "SOCRadar MSSP API Key (single key for all tenants)" }
+            "metadata": { "description": "SOCRadar Platform API Key" }
         },
         "CompanyIds": {
             "type": "string",
@@ -94,7 +94,7 @@
                     "contentVersion": "1.0.0.0",
                     "parameters": {
                         "$connections": { "defaultValue": {}, "type": "Object" },
-                        "SOCRadarAPIKey": { "type": "SecureString" },
+                        "SOCRadarApiKey": { "type": "SecureString" },
                         "CompanyIds": { "type": "String" },
                         "CompanyNames": { "type": "String" },
                         "WorkspaceName": { "type": "String" },
@@ -219,7 +219,7 @@
                                                 "method": "POST",
                                                 "uri": "https://platform.socradar.com/api/company/@{first(body('Filter_Company_Config'))?['CompanyId']}/alarms/status/change",
                                                 "headers": {
-                                                    "API-Key": "@{parameters('SOCRadarAPIKey')}",
+                                                    "API-Key": "@{parameters('SOCRadarApiKey')}",
                                                     "Content-Type": "application/json"
                                                 },
                                                 "body": {
@@ -243,7 +243,7 @@
                                                 "method": "POST",
                                                 "uri": "https://platform.socradar.com/api/company/@{first(body('Filter_Company_Config'))?['CompanyId']}/alarm/severity",
                                                 "headers": {
-                                                    "API-Key": "@{parameters('SOCRadarAPIKey')}",
+                                                    "API-Key": "@{parameters('SOCRadarApiKey')}",
                                                     "Content-Type": "application/json"
                                                 },
                                                 "body": {
@@ -333,7 +333,7 @@
                             }
                         }
                     },
-                    "SOCRadarAPIKey": { "value": "[parameters('SOCRadarAPIKey')]" },
+                    "SOCRadarApiKey": { "value": "[parameters('SOCRadarApiKey')]" },
                     "CompanyIds": { "value": "[parameters('CompanyIds')]" },
                     "CompanyNames": { "value": "[parameters('CompanyNames')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },

@@ -14,9 +14,9 @@
             "defaultValue": "SOCRadar-MSSP-Import",
             "metadata": { "description": "Name of the Logic App" }
         },
-        "SOCRadarAPIKey": {
+        "SOCRadarApiKey": {
             "type": "securestring",
-            "metadata": { "description": "SOCRadar MSSP API Key (single key for all tenants)" }
+            "metadata": { "description": "SOCRadar Platform API Key" }
         },
         "CompanyIds": {
             "type": "string",
@@ -127,7 +127,7 @@
                     "contentVersion": "1.0.0.0",
                     "parameters": {
                         "$connections": { "defaultValue": {}, "type": "Object" },
-                        "SOCRadarAPIKey": { "type": "SecureString" },
+                        "SOCRadarApiKey": { "type": "SecureString" },
                         "CompanyIds": { "type": "String" },
                         "CompanyNames": { "type": "String" },
                         "WorkspaceName": { "type": "String" },
@@ -287,7 +287,7 @@
                                                     "inputs": {
                                                         "method": "GET",
                                                         "uri": "https://platform.socradar.com/api/company/@{items('For_Each_Company')?['CompanyId']}/incidents/v4",
-                                                        "headers": { "API-Key": "@{parameters('SOCRadarAPIKey')}" },
+                                                        "headers": { "API-Key": "@{parameters('SOCRadarApiKey')}" },
                                                         "queries": {
                                                             "page": "@{variables('page')}",
                                                             "limit": "100",
@@ -556,7 +556,7 @@
                             }
                         }
                     },
-                    "SOCRadarAPIKey": { "value": "[parameters('SOCRadarAPIKey')]" },
+                    "SOCRadarApiKey": { "value": "[parameters('SOCRadarApiKey')]" },
                     "CompanyIds": { "value": "[parameters('CompanyIds')]" },
                     "CompanyNames": { "value": "[parameters('CompanyNames')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
