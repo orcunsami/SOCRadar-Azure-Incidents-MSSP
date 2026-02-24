@@ -26,9 +26,9 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 |-----------|---------|-------------|
 | `PollingIntervalMinutes` | 5 | How often to check for alarms (1-60 min) |
 | `InitialLookbackMinutes` | 600 | First run lookback (default: 10 hours) |
-| `ImportAllStatuses` | false | Import all statuses or only OPEN |
-| `EnableAuditLogging` | false | Log operations to Log Analytics |
-| `EnableAlarmsTable` | false | Store alarms in custom table |
+| `ImportAllStatuses` | true | Import all statuses or only OPEN |
+| `EnableAuditLogging` | true | Log operations to Log Analytics |
+| `EnableAlarmsTable` | true | Store alarms in custom table |
 
 ## What Gets Deployed
 
@@ -46,7 +46,9 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 
 ## Post-Deployment
 
-Logic Apps start 3 minutes after deployment to allow Azure role propagation.
+Logic Apps are configured to start **3 minutes after deployment** to allow Azure role propagation.
+
+No manual action required - they will start automatically.
 
 ## About SOCRadar
 
