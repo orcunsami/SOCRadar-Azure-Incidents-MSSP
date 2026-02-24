@@ -14,7 +14,7 @@
             "defaultValue": "SOCRadar-MSSP-Sync",
             "metadata": { "description": "Name of the Logic App" }
         },
-        "SOCRadarApiKey": {
+        "SocradarApiKey": {
             "type": "securestring",
             "metadata": { "description": "SOCRadar Platform API Key" }
         },
@@ -94,7 +94,7 @@
                     "contentVersion": "1.0.0.0",
                     "parameters": {
                         "$connections": { "defaultValue": {}, "type": "Object" },
-                        "SOCRadarApiKey": { "type": "SecureString" },
+                        "SocradarApiKey": { "type": "SecureString" },
                         "CompanyIds": { "type": "String" },
                         "CompanyNames": { "type": "String" },
                         "WorkspaceName": { "type": "String" },
@@ -219,7 +219,7 @@
                                                 "method": "POST",
                                                 "uri": "https://platform.socradar.com/api/company/@{first(body('Filter_Company_Config'))?['CompanyId']}/alarms/status/change",
                                                 "headers": {
-                                                    "API-Key": "@{parameters('SOCRadarApiKey')}",
+                                                    "API-Key": "@{parameters('SocradarApiKey')}",
                                                     "Content-Type": "application/json"
                                                 },
                                                 "body": {
@@ -243,7 +243,7 @@
                                                 "method": "POST",
                                                 "uri": "https://platform.socradar.com/api/company/@{first(body('Filter_Company_Config'))?['CompanyId']}/alarm/severity",
                                                 "headers": {
-                                                    "API-Key": "@{parameters('SOCRadarApiKey')}",
+                                                    "API-Key": "@{parameters('SocradarApiKey')}",
                                                     "Content-Type": "application/json"
                                                 },
                                                 "body": {
@@ -333,7 +333,7 @@
                             }
                         }
                     },
-                    "SOCRadarApiKey": { "value": "[parameters('SOCRadarApiKey')]" },
+                    "SocradarApiKey": { "value": "[parameters('SocradarApiKey')]" },
                     "CompanyIds": { "value": "[parameters('CompanyIds')]" },
                     "CompanyNames": { "value": "[parameters('CompanyNames')]" },
                     "WorkspaceName": { "value": "[parameters('WorkspaceName')]" },
