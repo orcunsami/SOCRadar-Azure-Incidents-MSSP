@@ -6,7 +6,7 @@
         "description": "Multi-tenant incident sync for MSSP. Routes closed Sentinel incidents back to the correct SOCRadar tenant with classification mapping and per-tenant API key resolution.",
         "version": "1.0.0",
         "author": "SOCRadar",
-        "lastUpdateTime": "2026-02-23T00:00:00.000Z"
+        "lastUpdateTime": "2026-02-24T00:00:00.000Z"
     },
     "parameters": {
         "PlaybookName": {

@@ -6,7 +6,7 @@
         "description": "Multi-tenant alarm import for MSSP environments. Imports alarms from multiple SOCRadar company accounts with parallel processing and per-tenant error isolation.",
         "version": "1.0.0",
         "author": "SOCRadar",
-        "lastUpdateTime": "2026-02-23T00:00:00.000Z"
+        "lastUpdateTime": "2026-02-24T00:00:00.000Z"
     },
     "parameters": {
         "PlaybookName": {

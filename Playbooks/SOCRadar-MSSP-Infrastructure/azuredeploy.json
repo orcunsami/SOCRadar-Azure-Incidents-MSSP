@@ -6,7 +6,7 @@
         "description": "Creates DCE, custom tables and DCRs for SOCRadar MSSP alarm and audit data ingestion with multi-tenant support",
         "version": "1.0.0",
         "author": "SOCRadar",
-        "lastUpdateTime": "2026-02-21T00:00:00.000Z"
+        "lastUpdateTime": "2026-02-24T00:00:00.000Z"
     },
     "parameters": {
         "WorkspaceName": {
