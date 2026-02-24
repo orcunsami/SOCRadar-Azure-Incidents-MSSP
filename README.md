@@ -29,12 +29,14 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 | `ImportAllStatuses` | false | Import all statuses or only OPEN |
 | `EnableAuditLogging` | true | Log operations to Log Analytics |
 | `EnableAlarmsTable` | true | Store alarms in custom table |
+| `EnableWorkbook` | true | Deploy SOCRadar MSSP Analytics Dashboard |
 
 ## What Gets Deployed
 
 - **SOCRadar-MSSP-Import** - Imports alarms from multiple SOCRadar tenants as Sentinel incidents
 - **SOCRadar-MSSP-Sync** - Syncs closed incidents back to the correct SOCRadar tenant
 - **SOCRadar-MSSP-Infrastructure** - Audit logging and custom table infrastructure (optional)
+- **SOCRadar MSSP Dashboard** - Workbook with company filter, severity/status charts, timeline, and audit monitoring (if EnableWorkbook=true)
 
 ## Key Features
 
