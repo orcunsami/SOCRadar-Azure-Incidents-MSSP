@@ -25,11 +25,13 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `PollingIntervalMinutes` | 5 | How often to check for alarms (1-60 min) |
-| `InitialLookbackMinutes` | 600 | First run lookback (default: 10 hours) |
+| `InitialLookbackMinutes` | 600 | First run lookback (default: 10 hours, max: 10080 = 7 days) |
 | `ImportAllStatuses` | false | Import all statuses or only OPEN |
 | `EnableAuditLogging` | true | Log operations to Log Analytics |
 | `EnableAlarmsTable` | true | Store alarms in custom table |
 | `EnableWorkbook` | true | Deploy SOCRadar MSSP Analytics Dashboard |
+| `WorkspaceResourceGroup` | (same as deployment RG) | Resource group of existing Microsoft Sentinel workspace |
+| `SentinelRoleLevel` | Responder | Microsoft Sentinel role: Responder (least-privilege) or Contributor |
 
 ## What Gets Deployed
 
@@ -45,6 +47,8 @@ Multi-tenant alarm integration between SOCRadar XTI Platform and Microsoft Senti
 - Per-tenant error handling (one tenant failure doesn't affect others)
 - Automatic tenant routing for bidirectional sync
 - Classification mapping for closed incidents
+- Cross-resource-group deployment (workspace can be in different RG)
+- Least-privilege access (Microsoft Sentinel Responder by default)
 
 ## Post-Deployment
 
