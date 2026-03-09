@@ -101,6 +101,21 @@
             "metadata": {
                 "description": "Internal: Logic Apps start 3 min after deploy for role propagation"
             }
+        },
+        "WorkspaceResourceGroup": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().name]",
+            "metadata": {
+                "description": "Resource group of existing Sentinel workspace. Leave default if workspace is in same RG."
+            }
+        },
+        "SentinelRoleLevel": {
+            "type": "string",
+            "defaultValue": "Responder",
+            "allowedValues": ["Contributor", "Responder"],
+            "metadata": {
+                "description": "Sentinel role for Logic Apps. Responder sufficient for incident ops (least-privilege)."
+            }
         }
     },
     "variables": {
@@ -115,13 +130,17 @@
         "AlarmsDcrName": "SOCRadar-MSSP-Alarms-DCR",
         "AlarmsStreamName": "Custom-SOCRadar_Alarms_CL",
         "SentinelContributorRoleId": "ab8e14d6-4a74-4a29-9ba8-549422addade",
+        "SentinelResponderRoleId": "3e150937-b8fe-4cfb-8069-0eaf05ecd056",
+        "sentinelRoleDefinitionId": "[if(equals(parameters('SentinelRoleLevel'), 'Responder'), variables('SentinelResponderRoleId'), variables('SentinelContributorRoleId'))]",
         "LogAnalyticsReaderRoleId": "73c42c96-874c-492b-b04d-ab87d138a893",
         "MonitoringMetricsPublisherRoleId": "3913510d-42f4-4e42-8a64-420c390055eb",
-        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName'))]",
+        "isExternalWorkspace": "[not(equals(parameters('WorkspaceResourceGroup'), resourceGroup().name))]",
+        "workspaceResourceId": "[resourceId(parameters('WorkspaceResourceGroup'), 'Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName'))]",
         "WorkbookName": "SOCRadar-MSSP-Dashboard"
     },
     "resources": [
         {
+            "condition": "[not(variables('isExternalWorkspace'))]",
             "type": "Microsoft.OperationalInsights/workspaces",
             "apiVersion": "2023-09-01",
             "name": "[parameters('WorkspaceName')]",
@@ -133,6 +152,7 @@
             }
         },
         {
+            "condition": "[not(variables('isExternalWorkspace'))]",
             "type": "Microsoft.OperationsManagement/solutions",
             "apiVersion": "2015-11-01-preview",
             "name": "[concat('SecurityInsights(', parameters('WorkspaceName'), ')')]",
@@ -151,6 +171,7 @@
             }
         },
         {
+            "condition": "[not(variables('isExternalWorkspace'))]",
             "type": "Microsoft.OperationalInsights/workspaces/providers/onboardingStates",
             "apiVersion": "2024-03-01",
             "name": "[concat(parameters('WorkspaceName'), '/Microsoft.SecurityInsights/default')]",
@@ -160,7 +181,7 @@
             "properties": {}
         },
         {
-            "condition": "[parameters('EnableAuditLogging')]",
+            "condition": "[and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.OperationalInsights/workspaces/tables",
             "apiVersion": "2022-10-01",
             "name": "[concat(parameters('WorkspaceName'), '/', variables('AuditTableName'))]",
@@ -234,7 +255,7 @@
             }
         },
         {
-            "condition": "[parameters('EnableAuditLogging')]",
+            "condition": "[and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Insights/dataCollectionRules",
             "apiVersion": "2023-03-11",
             "name": "[variables('AuditDcrName')]",
@@ -318,7 +339,7 @@
             }
         },
         {
-            "condition": "[parameters('EnableAlarmsTable')]",
+            "condition": "[and(parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Insights/dataCollectionEndpoints",
             "apiVersion": "2023-03-11",
             "name": "[variables('DceName')]",
@@ -331,7 +352,7 @@
             }
         },
         {
-            "condition": "[parameters('EnableAlarmsTable')]",
+            "condition": "[and(parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.OperationalInsights/workspaces/tables",
             "apiVersion": "2022-10-01",
             "name": "[concat(parameters('WorkspaceName'), '/', variables('AlarmsTableName'))]",
@@ -410,7 +431,7 @@
             }
         },
         {
-            "condition": "[parameters('EnableAlarmsTable')]",
+            "condition": "[and(parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Insights/dataCollectionRules",
             "apiVersion": "2023-03-11",
             "name": "[variables('AlarmsDcrName')]",
@@ -499,7 +520,7 @@
             }
         },
         {
-            "condition": "[and(parameters('EnableWorkbook'), parameters('EnableAlarmsTable'))]",
+            "condition": "[and(parameters('EnableWorkbook'), parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Insights/workbooks",
             "apiVersion": "2022-04-01",
             "name": "[guid(resourceGroup().id, 'SOCRadar-MSSP-Workbook')]",
@@ -639,7 +660,7 @@
                             "type": "Http",
                             "inputs": {
                                 "method": "GET",
-                                "uri": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1&$filter=startswith(properties/title, ''[MSSP-'')')]",
+                                "uri": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('WorkspaceResourceGroup'), '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1&$filter=startswith(properties/title, ''[MSSP-'')')]",
                                 "authentication": {
                                     "type": "ManagedServiceIdentity"
                                 },
@@ -749,7 +770,7 @@
                                     {
                                         "name": "incidents_next_link",
                                         "type": "string",
-                                        "value": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1000&$filter=startswith(properties/title, ''[MSSP-'')')]"
+                                        "value": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('WorkspaceResourceGroup'), '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1000&$filter=startswith(properties/title, ''[MSSP-'')')]"
                                     }
                                 ]
                             },
@@ -1098,7 +1119,7 @@
                                                                                         }
                                                                                     },
                                                                                     "method": "put",
-                                                                                    "path": "[concat('/Incidents/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/workspaces/', parameters('WorkspaceName'))]",
+                                                                                    "path": "[concat('/Incidents/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('WorkspaceResourceGroup'), '/workspaces/', parameters('WorkspaceName'))]",
                                                                                     "body": {
                                                                                         "title": "[MSSP-@{items('For_Each_Company')?['CompanyName']}] #@{items('For_Each_Alarm')?['alarm_id']} - @{if(greater(length(coalesce(items('For_Each_Alarm')?['alarm_type_details']?['alarm_generic_title'], '')), 200), concat(substring(items('For_Each_Alarm')?['alarm_type_details']?['alarm_generic_title'], 0, 197), '...'), coalesce(items('For_Each_Alarm')?['alarm_type_details']?['alarm_generic_title'], 'N/A'))}",
                                                                                         "description": "@{concat('SOCRadar MSSP Alarm', decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Company: ', items('For_Each_Company')?['CompanyName'], ' (ID: ', items('For_Each_Company')?['CompanyId'], ')', decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Alarm ID: ', string(items('For_Each_Alarm')?['alarm_id']), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Main Type: ', coalesce(items('For_Each_Alarm')?['alarm_type_details']?['alarm_main_type'], 'N/A'), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Sub Type: ', coalesce(items('For_Each_Alarm')?['alarm_type_details']?['alarm_sub_type'], 'N/A'), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Severity: ', items('For_Each_Alarm')?['alarm_risk_level'], decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Status: ', coalesce(items('For_Each_Alarm')?['status'], 'OPEN'), decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Created: ', items('For_Each_Alarm')?['date'], decodeUriComponent('%0A'), decodeUriComponent('%0A'), 'Details:', decodeUriComponent('%0A'), if(greater(length(coalesce(items('For_Each_Alarm')?['alarm_text'], '')), 1500), concat(substring(items('For_Each_Alarm')?['alarm_text'], 0, 1500), '...'), coalesce(items('For_Each_Alarm')?['alarm_text'], 'No details')), decodeUriComponent('%0A'), decodeUriComponent('%0A'), if(not(empty(items('For_Each_Alarm')?['content'])), concat('Content:', decodeUriComponent('%0A'), replace(replace(replace(replace(if(greater(length(string(items('For_Each_Alarm')?['content'])), 2000), concat(substring(string(items('For_Each_Alarm')?['content']), 0, 2000), '... [truncated]'), string(items('For_Each_Alarm')?['content'])), '\"', ''), '{', ''), '}', ''), ',', ' -*- '), decodeUriComponent('%0A'), decodeUriComponent('%0A')), ''), 'View in SOCRadar: https://platform.socradar.com/company/', items('For_Each_Company')?['CompanyId'], '/alarm/', items('For_Each_Alarm')?['alarm_id'])}",
@@ -1436,25 +1457,25 @@
                         "value": "[parameters('ImportAllStatuses')]"
                     },
                     "EnableAuditLogging": {
-                        "value": "[parameters('EnableAuditLogging')]"
+                        "value": "[if(variables('isExternalWorkspace'), false(), parameters('EnableAuditLogging'))]"
                     },
                     "AuditDcrEndpoint": {
-                        "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').endpoints.logsIngestion, '')]"
+                        "value": "[if(and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace'))), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').endpoints.logsIngestion, '')]"
                     },
                     "AuditDcrImmutableId": {
-                        "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').immutableId, '')]"
+                        "value": "[if(and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace'))), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').immutableId, '')]"
                     },
                     "AuditStreamName": {
                         "value": "[variables('AuditStreamName')]"
                     },
                     "EnableAlarmsTable": {
-                        "value": "[parameters('EnableAlarmsTable')]"
+                        "value": "[if(variables('isExternalWorkspace'), false(), parameters('EnableAlarmsTable'))]"
                     },
                     "DceEndpoint": {
-                        "value": "[if(parameters('EnableAlarmsTable'), reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', variables('DceName')), '2023-03-11').logsIngestion.endpoint, '')]"
+                        "value": "[if(and(parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace'))), reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', variables('DceName')), '2023-03-11').logsIngestion.endpoint, '')]"
                     },
                     "AlarmsDcrImmutableId": {
-                        "value": "[if(parameters('EnableAlarmsTable'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AlarmsDcrName')), '2023-03-11').immutableId, '')]"
+                        "value": "[if(and(parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace'))), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AlarmsDcrName')), '2023-03-11').immutableId, '')]"
                     },
                     "AlarmsStreamName": {
                         "value": "[variables('AlarmsStreamName')]"
@@ -1463,7 +1484,7 @@
                         "value": "[subscription().subscriptionId]"
                     },
                     "ResourceGroupName": {
-                        "value": "[resourceGroup().name]"
+                        "value": "[parameters('WorkspaceResourceGroup')]"
                     }
                 }
             }
@@ -1579,7 +1600,7 @@
                                     {
                                         "name": "closed_next_link",
                                         "type": "string",
-                                        "value": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1000&$filter=properties/labels/any(label: label/labelName eq ''SOCRadar'') and properties/status eq ''Closed'' and properties/lastModifiedTimeUtc ge @{outputs(''Calculate_Lookback_Time'')} and startswith(properties/title, ''[MSSP-'')')]"
+                                        "value": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('WorkspaceResourceGroup'), '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents?api-version=2023-11-01&$top=1000&$filter=properties/labels/any(label: label/labelName eq ''SOCRadar'') and properties/status eq ''Closed'' and properties/lastModifiedTimeUtc ge @{outputs(''Calculate_Lookback_Time'')} and startswith(properties/title, ''[MSSP-'')')]"
                                     }
                                 ]
                             },
@@ -1799,7 +1820,7 @@
                                             "type": "Http",
                                             "inputs": {
                                                 "method": "PUT",
-                                                "uri": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents/@{items(''For_Each_Incident'')?[''name'']}?api-version=2023-11-01')]",
+                                                "uri": "[concat('https://management.azure.com/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('WorkspaceResourceGroup'), '/providers/Microsoft.OperationalInsights/workspaces/', parameters('WorkspaceName'), '/providers/Microsoft.SecurityInsights/incidents/@{items(''For_Each_Incident'')?[''name'']}?api-version=2023-11-01')]",
                                                 "authentication": {
                                                     "type": "ManagedServiceIdentity"
                                                 },
@@ -1942,13 +1963,13 @@
                         "value": "[parameters('PollingIntervalMinutes')]"
                     },
                     "EnableAuditLogging": {
-                        "value": "[parameters('EnableAuditLogging')]"
+                        "value": "[if(variables('isExternalWorkspace'), false(), parameters('EnableAuditLogging'))]"
                     },
                     "AuditDcrEndpoint": {
-                        "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').endpoints.logsIngestion, '')]"
+                        "value": "[if(and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace'))), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').endpoints.logsIngestion, '')]"
                     },
                     "AuditDcrImmutableId": {
-                        "value": "[if(parameters('EnableAuditLogging'), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').immutableId, '')]"
+                        "value": "[if(and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace'))), reference(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), '2023-03-11').immutableId, '')]"
                     },
                     "AuditStreamName": {
                         "value": "[variables('AuditStreamName')]"
@@ -1957,23 +1978,26 @@
             }
         },
         {
+            "condition": "[not(variables('isExternalWorkspace'))]",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
-            "name": "[guid(resourceGroup().id, variables('ImportPlaybookName'), variables('SentinelContributorRoleId'))]",
+            "name": "[guid(variables('workspaceResourceId'), variables('ImportPlaybookName'), variables('sentinelRoleDefinitionId'))]",
             "dependsOn": [
                 "[resourceId('Microsoft.Logic/workflows', variables('ImportPlaybookName'))]"
             ],
+            "scope": "[variables('workspaceResourceId')]",
             "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('SentinelContributorRoleId'))]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('sentinelRoleDefinitionId'))]",
                 "principalId": "[reference(resourceId('Microsoft.Logic/workflows', variables('ImportPlaybookName')), '2019-05-01', 'Full').identity.principalId]",
                 "principalType": "ServicePrincipal"
             }
         },
         {
+            "condition": "[not(variables('isExternalWorkspace'))]",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
-            "name": "[guid(resourceId('Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName')), variables('ImportPlaybookName'), variables('LogAnalyticsReaderRoleId'))]",
-            "scope": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('WorkspaceName'))]",
+            "name": "[guid(variables('workspaceResourceId'), variables('ImportPlaybookName'), variables('LogAnalyticsReaderRoleId'))]",
+            "scope": "[variables('workspaceResourceId')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Logic/workflows', variables('ImportPlaybookName'))]"
             ],
@@ -1984,7 +2008,7 @@
             }
         },
         {
-            "condition": "[parameters('EnableAuditLogging')]",
+            "condition": "[and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
             "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), variables('ImportPlaybookName'), variables('MonitoringMetricsPublisherRoleId'))]",
@@ -2000,7 +2024,7 @@
             }
         },
         {
-            "condition": "[parameters('EnableAlarmsTable')]",
+            "condition": "[and(parameters('EnableAlarmsTable'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
             "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', variables('AlarmsDcrName')), variables('ImportPlaybookName'), variables('MonitoringMetricsPublisherRoleId'))]",
@@ -2016,20 +2040,22 @@
             }
         },
         {
+            "condition": "[not(variables('isExternalWorkspace'))]",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
-            "name": "[guid(resourceGroup().id, variables('SyncPlaybookName'), variables('SentinelContributorRoleId'))]",
+            "name": "[guid(variables('workspaceResourceId'), variables('SyncPlaybookName'), variables('sentinelRoleDefinitionId'))]",
+            "scope": "[variables('workspaceResourceId')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Logic/workflows', variables('SyncPlaybookName'))]"
             ],
             "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('SentinelContributorRoleId'))]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('sentinelRoleDefinitionId'))]",
                 "principalId": "[reference(resourceId('Microsoft.Logic/workflows', variables('SyncPlaybookName')), '2019-05-01', 'Full').identity.principalId]",
                 "principalType": "ServicePrincipal"
             }
         },
         {
-            "condition": "[parameters('EnableAuditLogging')]",
+            "condition": "[and(parameters('EnableAuditLogging'), not(variables('isExternalWorkspace')))]",
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2022-04-01",
             "name": "[guid(resourceId('Microsoft.Insights/dataCollectionRules', variables('AuditDcrName')), variables('SyncPlaybookName'), variables('MonitoringMetricsPublisherRoleId'))]",
@@ -2042,6 +2068,62 @@
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('MonitoringMetricsPublisherRoleId'))]",
                 "principalId": "[reference(resourceId('Microsoft.Logic/workflows', variables('SyncPlaybookName')), '2019-05-01', 'Full').identity.principalId]",
                 "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "condition": "[variables('isExternalWorkspace')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2021-04-01",
+            "name": "deploy-workspace-roles",
+            "resourceGroup": "[parameters('WorkspaceResourceGroup')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Logic/workflows', variables('ImportPlaybookName'))]",
+                "[resourceId('Microsoft.Logic/workflows', variables('SyncPlaybookName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "expressionEvaluationOptions": {
+                    "scope": "outer"
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(variables('workspaceResourceId'), variables('ImportPlaybookName'), variables('sentinelRoleDefinitionId'))]",
+                            "scope": "[variables('workspaceResourceId')]",
+                            "properties": {
+                                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('sentinelRoleDefinitionId'))]",
+                                "principalId": "[reference(resourceId('Microsoft.Logic/workflows', variables('ImportPlaybookName')), '2019-05-01', 'Full').identity.principalId]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(variables('workspaceResourceId'), variables('ImportPlaybookName'), variables('LogAnalyticsReaderRoleId'))]",
+                            "scope": "[variables('workspaceResourceId')]",
+                            "properties": {
+                                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('LogAnalyticsReaderRoleId'))]",
+                                "principalId": "[reference(resourceId('Microsoft.Logic/workflows', variables('ImportPlaybookName')), '2019-05-01', 'Full').identity.principalId]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2022-04-01",
+                            "name": "[guid(variables('workspaceResourceId'), variables('SyncPlaybookName'), variables('sentinelRoleDefinitionId'))]",
+                            "scope": "[variables('workspaceResourceId')]",
+                            "properties": {
+                                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('sentinelRoleDefinitionId'))]",
+                                "principalId": "[reference(resourceId('Microsoft.Logic/workflows', variables('SyncPlaybookName')), '2019-05-01', 'Full').identity.principalId]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        }
+                    ]
+                }
             }
         },
         {
